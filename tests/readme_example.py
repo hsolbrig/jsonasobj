@@ -1,29 +1,3 @@
-# jsonasobj
-
-## Introduction
-
-This is an extension to the python *json* library that represents the JSON
-as a first class python object rather than a straight 
-dictionary.  Contents can still be accessed using dictionary format.
-
-
-## Requirements
-
-* Python (3.0 or later)
-
-## Installation
-
-*jsonasobj* can be installed with *pip*:
-
-```bash
-pip install jsonasobj
-```
-
-## Short Example
---------------
-
-```python
-
 import jsonasobj
 
 test_json = """{
@@ -56,11 +30,9 @@ print(py_obj.knows[0].name)
 print(py_obj['@context'].name)
 print(py_obj._as_json_dumps())
 print(py_obj._as_dict)
-```
-
+'''
 Result:
 
-```bash
 Markus Lanthaler
 Markus Lanthaler
 Dave Longley
@@ -90,8 +62,5 @@ http://xmlns.com/foaf/0.1/name
    }
 }
 {'@id': 'http://me.markus-lanthaler.com/', 'knows': [{'modelDate': '01/01/2015', 'extra': {'age': 17}, 'name': 'Dave Longley'}, {'name': 'Barack Obama'}], 'name': 'Markus Lanthaler', '@context': {'menu': {'@id': 'name:foo', '@type': '@id'}, 'knows': 'http://xmlns.com/foaf/0.1/knows', 'name': 'http://xmlns.com/foaf/0.1/name'}}
-```
 
-## Source
-
-http://github.com/hsolbrig/jsonasobj
+'''
