@@ -59,6 +59,12 @@ class JsonObj(ExtendedNamespace):
             self[k] = JsonObj(**value) if isinstance(value, dict) else value
         return self[k]
 
+    def _items(self):
+        """ Same as dict items() except that the values are JsonObjs instead of vanilla dictionaries
+        :return:
+        """
+        return [(k, self[k]) for k in self.__dict__.keys()]
+
     @property
     def _as_json(self, **kwargs):
         """ Convert a JsonObj into straight json
