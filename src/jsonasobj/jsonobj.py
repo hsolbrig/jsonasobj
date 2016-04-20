@@ -41,6 +41,9 @@ class JsonObj(ExtendedNamespace):
         """
         ExtendedNamespace.__init__(self, **kwargs)
 
+    def _get(self, item, default=None) -> object:
+        return self[item] if item in self else default
+
     def _default(self, obj):
         """ a function that returns a serializable version of obj or raises TypeError
         :param obj:

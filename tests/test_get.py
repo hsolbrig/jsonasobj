@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2016, Mayo Clinic
 # All rights reserved.
 #
@@ -26,11 +25,29 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-from jsonasobj.jsonobj import JsonObj, loads, load
-from jsonasobj.extendednamespace import ExtendedNamespace
 
-__copyright__ = 'Copyright (c) 2016, Mayo Clinic'
-__license__ = 'New BSD license'
-__version__ = '0.0.6'
+import unittest
+import jsonasobj
 
-__all__ = ['extendednamespace', 'jsonobj']
+test_json = """{
+    "k1": 1,
+    "k2": "abc",
+    "k3": {
+        "x1": "foo",
+        "x2": 17
+    },
+    "k4": [1, "abc", {"k5": 42}]
+}"""
+
+
+class GetTestCase(unittest.TestCase):
+    def test_get(self):
+        py_obj = jsonasobj.loads(test_json)
+        self.assertEqual(1, py_obj.k1)
+        with self.assertRaises(AttributeError):
+            py_obj.e1
+        self.assertIsNone(py_obj._get('e1'))
+        self.assertEqual("abc", py_obj._get('e2', 'abc'))
+
+if __name__ == '__main__':
+    unittest.main()
