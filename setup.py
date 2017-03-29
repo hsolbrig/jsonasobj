@@ -14,6 +14,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 import jsonasobj
 
+
 # with open('README.md') as file:
 #     long_description = file.read()
 long_description = """an extension to the core python json library that treats name/value pairs
@@ -26,7 +27,7 @@ setup(
     long_description=long_description,
     author='Harold Solbrig',
     author_email='solbrig.harold@mayo.edu',
-    url='http://github.com/hsolbrig/jsobj',
+    url='http://github.com/hsolbrig/jsonasobj',
     packages=['jsonasobj'],
     package_dir={'': 'src'},
     license='BSD 3-Clause license',

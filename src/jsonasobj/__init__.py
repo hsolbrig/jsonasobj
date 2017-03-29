@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016, Mayo Clinic
+# Copyright (c) 2017, Mayo Clinic
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -29,8 +29,8 @@
 from jsonasobj.jsonobj import JsonObj, loads, load
 from jsonasobj.extendednamespace import ExtendedNamespace
 
-__copyright__ = 'Copyright (c) 2016, Mayo Clinic'
+__copyright__ = 'Copyright (c) 2017, Mayo Clinic'
 __license__ = 'New BSD license'
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
 __all__ = ['extendednamespace', 'jsonobj']
