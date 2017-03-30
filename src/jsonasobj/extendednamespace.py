@@ -54,5 +54,5 @@ class ExtendedNamespace(Namespace):
     def __len__(self):
         return len(self.__dict__)
 
-    def get(self, key, default=None):
+    def _get(self, key, default=None):
         return self.__dict__.get(key, default)

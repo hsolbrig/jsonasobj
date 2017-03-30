@@ -5,8 +5,18 @@
 This is an extension to the python *json* library that represents the JSON
 as a first class python object rather than a straight 
 dictionary.  Contents can still be accessed using dictionary format.
+---
+**Warning**: Version 1.0.0 of this package is NOT backwards compatible with earlier versions.  The JSONObj functions:
+* setattr(...)
+* get(...)
 
+have been replaced with
+* _setattr(...)
+* _get(...)
 
+This was done because anything without a "_" prefix presents a potential collision with the JSON itself.
+
+---
 ## Requirements
 
 * Python (3.0 or later)

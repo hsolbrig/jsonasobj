@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2015, Mayo Clinic
+# Copyright (c) 2017, Mayo Clinic
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -57,7 +57,7 @@ class JsonObj(ExtendedNamespace):
         """
         return json.loads(self._as_json_dumps(indent=None))
 
-    def setdefault(self, k, value):
+    def _setdefault(self, k, value):
         if k not in self:
             self[k] = JsonObj(**value) if isinstance(value, dict) else value
         return self[k]
