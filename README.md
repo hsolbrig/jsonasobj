@@ -5,6 +5,13 @@
 This is an extension to the python *json* library that represents the JSON
 as a first class python object rather than a straight 
 dictionary.  Contents can still be accessed using dictionary format.
+
+### Changes in version 1.1.0:
+1) Method signatures all have full typing
+
+2) `load` function will take a file name, a url -or- an open file as an argument
+
+
 ---
 **Warning**: Version 1.0.0 of this package is NOT backwards compatible with earlier versions.  The JSONObj functions:
 * setattr(...)

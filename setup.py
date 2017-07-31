@@ -6,10 +6,14 @@ jsonasobj
 jsonasobj is an extension to the core python json library that treats name/value pairs
 as first class attributes whenever possible
 """
-
-from distutils.core import setup
 import os
 import sys
+
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 import jsonasobj

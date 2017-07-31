@@ -27,7 +27,16 @@
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
+from typing import Union, List, Dict, Tuple
+from urllib import request
+
 from .extendednamespace import ExtendedNamespace
+
+# Possible types in the JsonObj representation
+JsonObjTypes = Union["JsonObj", List["JsonObjTypes"], str, bool, int, float, None]
+
+# Types in the pure JSON representation
+JsonTypes = Union[Dict[str, "JsonTypes"], List["JsonTypes"], str, bool, int, float, None]
 
 
 class JsonObj(ExtendedNamespace):
@@ -41,7 +50,7 @@ class JsonObj(ExtendedNamespace):
         """
         ExtendedNamespace.__init__(self, **kwargs)
 
-    def _get(self, item, default=None) -> object:
+    def _get(self, item: str, default: JsonObjTypes=None) -> JsonObjTypes:
         return self[item] if item in self else default
 
     def _default(self, obj):
@@ -49,34 +58,34 @@ class JsonObj(ExtendedNamespace):
         :param obj:
         :return: Serialized version of obj
         """
-        return obj.__dict__ if isinstance(obj, JsonObj) else json.JSONDecoder.default(self, obj)
+        return obj.__dict__ if isinstance(obj, JsonObj) else json.JSONDecoder().decode(obj)
 
-    def _as_json_obj(self):
+    def _as_json_obj(self) -> JsonTypes:
         """ Return jsonObj as pure json
         :return: Pure json image
         """
-        return json.loads(self._as_json_dumps(indent=None))
+        return json.loads(self._as_json_dumps())
 
-    def _setdefault(self, k, value):
+    def _setdefault(self, k: str, value: Union[Dict, JsonTypes]) -> JsonObjTypes:
         if k not in self:
             self[k] = JsonObj(**value) if isinstance(value, dict) else value
         return self[k]
 
-    def _items(self):
+    def _items(self) -> List[Tuple[str, JsonObjTypes]]:
         """ Same as dict items() except that the values are JsonObjs instead of vanilla dictionaries
         :return:
         """
         return [(k, self[k]) for k in self.__dict__.keys()]
 
     @property
-    def _as_json(self, **kwargs):
+    def _as_json(self, **kwargs) -> JsonTypes:
         """ Convert a JsonObj into straight json
         :param kwargs: json.dumps arguments
         :return: JSON formatted str
         """
         return json.dumps(self, default=self._default, **kwargs)
 
-    def _as_json_dumps(self, indent='   ', **kwargs):
+    def _as_json_dumps(self, indent: str='   ', **kwargs) -> str:
         """ Convert to a stringified json object.  This is the same as _as_json with the exception that it isn't
         a property, meaning that we can actually pass arguments...
         :param indent: indent argument to dumps
@@ -86,7 +95,7 @@ class JsonObj(ExtendedNamespace):
         return json.dumps(self, default=self._default, indent=indent, **kwargs)
 
     @staticmethod
-    def __as_list(value):
+    def __as_list(value: List[JsonObjTypes]) -> List[JsonTypes]:
         """ Return a json array as a list
         :param value: array
         :return: array with JsonObj instances removed
@@ -94,15 +103,16 @@ class JsonObj(ExtendedNamespace):
         return [e._as_dict if isinstance(e, JsonObj) else e for e in value]
 
     @property
-    def _as_dict(self):
+    def _as_dict(self) -> Dict[str, JsonTypes]:
         """ Convert a JsonObj into a straight dictionary
         :return: dictionary that cooresponds to the json object
         """
         return {k: v._as_dict if isinstance(v, JsonObj) else
-                self.__as_list(v) if isinstance(v, list) else v for k, v in self.__dict__.items()}
+                   self.__as_list(v) if isinstance(v, list) else
+                   v for k, v in self.__dict__.items()}
 
 
-def loads(s: str, **kwargs):
+def loads(s: str, **kwargs) -> JsonObj:
     """ Convert a json_str into a JsonObj
     :param s: a str instance containing a JSON document
     :param kwargs: arguments see: json.load for details
@@ -111,10 +121,22 @@ def loads(s: str, **kwargs):
     return json.loads(s, object_hook=lambda pairs: JsonObj(**pairs), **kwargs)
 
 
-def load(fp, **kwargs):
-    """ Deserialize fp (a .read()-supporting file-like object containing a JSON document) to a JsonObj
-    :param fp: file-like object to deserialize
+def load(source, **kwargs) -> JsonObj:
+    """ Deserialize a JSON source.
+    :param source: a URI, File name or a .read()-supporting file-like object containing a JSON document
     :param kwargs: arguments. see: json.load for details
     :return: JsonObj representing fp
     """
-    return loads(fp.read(), **kwargs)
+    if isinstance(source, str):
+        if '://' in source:
+            with request.urlopen(source) as response:
+                jsons = response.read()
+        else:
+            with open(source) as f:
+                jsons = f.read()
+    elif hasattr(source, "read"):
+        jsons = source.read()
+    else:
+        raise TypeError("Unexpected type {} for source {}".format(type(source), source))
+
+    return loads(jsons, **kwargs)

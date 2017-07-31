@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2017, Mayo Clinic
 # All rights reserved.
 #
@@ -26,11 +25,40 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-from jsonasobj.jsonobj import JsonObj, loads, load
-from jsonasobj.extendednamespace import ExtendedNamespace
 
-__copyright__ = 'Copyright (c) 2017, Mayo Clinic'
-__license__ = 'New BSD license'
-__version__ = '1.1.0'
+import unittest
 
-__all__ = ['extendednamespace', 'jsonobj']
+import os
+
+
+class LoadTestCase(unittest.TestCase):
+    def test_load_file(self):
+        from jsonasobj import load
+        json_fname = os.path.join(os.path.split(os.path.abspath(__file__))[0], 'file.json')
+        json_obj = load(json_fname)
+        self.assertEqual([1, False, -12.7, "qwert"], json_obj.a_dict.vals)
+
+    def test_load_uri(self):
+        from jsonasobj import load
+        # A relatively stable JSON file
+        json_obj = load("http://hl7.org/fhir/STU3/account-example.json")
+        self.assertEqual('Coverage/7546D', json_obj.coverage[0].coverage.reference)
+
+    def test_load_fp(self):
+        from jsonasobj import load
+        json_fname = os.path.join(os.path.split(os.path.abspath(__file__))[0], 'file.json')
+        with open(json_fname) as f:
+            json_obj = load(f)
+        self.assertEqual([1, False, -12.7, "qwert"], json_obj.a_dict.vals)
+
+    def test_bad_load(self):
+        from jsonasobj import load
+        json_fname = os.path.join(os.path.split(os.path.abspath(__file__))[0], 'filex.json')
+        with self.assertRaises(FileNotFoundError):
+            json_obj = load(json_fname)
+        with self.assertRaises(TypeError):
+            load(dict())
+
+
+if __name__ == '__main__':
+    unittest.main()
