@@ -31,6 +31,6 @@ from jsonasobj.extendednamespace import ExtendedNamespace
 
 __copyright__ = 'Copyright (c) 2017, Mayo Clinic'
 __license__ = 'New BSD license'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 __all__ = ['extendednamespace', 'jsonobj']

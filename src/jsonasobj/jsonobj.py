@@ -29,6 +29,7 @@
 import json
 from typing import Union, List, Dict, Tuple
 from urllib import request
+from urllib.request import Request, urlopen
 
 from .extendednamespace import ExtendedNamespace
 
@@ -129,7 +130,9 @@ def load(source, **kwargs) -> JsonObj:
     """
     if isinstance(source, str):
         if '://' in source:
-            with request.urlopen(source) as response:
+            req = Request(source)
+            req.add_header("Accept", "application/json, text/json;q=0.9")
+            with urlopen(req) as response:
                 jsons = response.read()
         else:
             with open(source) as f:

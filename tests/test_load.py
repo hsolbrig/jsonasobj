@@ -59,6 +59,10 @@ class LoadTestCase(unittest.TestCase):
         with self.assertRaises(TypeError):
             load(dict())
 
+    def test_load_redirect(self):
+        from jsonasobj import load
+        json_obj = load("http://hl7.org/fhir/Patient/f001")
+        self.assertEqual('male', json_obj.gender)
 
 if __name__ == '__main__':
     unittest.main()
