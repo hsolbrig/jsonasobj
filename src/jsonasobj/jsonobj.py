@@ -119,6 +119,8 @@ def loads(s: str, **kwargs) -> JsonObj:
     :param kwargs: arguments see: json.load for details
     :return: JsonObj representing the json string
     """
+    if isinstance(s, (bytes, bytearray)):
+        s = s.decode(json.detect_encoding(s), 'surrogatepass')
     return json.loads(s, object_hook=lambda pairs: JsonObj(**pairs), **kwargs)
 
 

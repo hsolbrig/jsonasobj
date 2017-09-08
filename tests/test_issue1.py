@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2017, Mayo Clinic
 # All rights reserved.
 #
@@ -26,11 +25,15 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-from jsonasobj.jsonobj import JsonObj, loads, load
-from jsonasobj.extendednamespace import ExtendedNamespace
 
-__copyright__ = 'Copyright (c) 2017, Mayo Clinic'
-__license__ = 'New BSD license'
-__version__ = '1.1.2'
+import unittest
 
-__all__ = ['extendednamespace', 'jsonobj']
+
+class ByteArrayTestCase(unittest.TestCase):
+    def test_bytearray(self):
+        from jsonasobj import load
+        load("http://hl7.org/fhir/Patient/f201")
+
+
+if __name__ == '__main__':
+    unittest.main()
