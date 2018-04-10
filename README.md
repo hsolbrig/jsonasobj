@@ -4,7 +4,7 @@
 [![PyPi](https://version-image.appspot.com/pypi/?name=jsonasobj)](https://pypi.python.org/pypi/jsonasobj)
 
 ## Revision History
-* 0.5.0 -- added non-protected access methods and changed copyright
+* 1.2.0 -- added non-protected access methods and changed copyright
 
 ## Introduction
 
