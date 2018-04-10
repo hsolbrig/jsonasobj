@@ -31,6 +31,8 @@ import json
 import jsonasobj
 from dict_compare import compare_dicts
 
+from jsonasobj.jsonobj import as_json, as_dict
+
 test_data = {
   "@context": {
     "name": "http://xmlns.com/foaf/0.1/name",
@@ -61,7 +63,9 @@ class ExampleTestCase(unittest.TestCase):
         self.assertEqual('Dave Longley', pyobj.knows[0].name)
         self.assertEqual('http://xmlns.com/foaf/0.1/name', pyobj['@context'].name)
         self.assertEqual(json.loads(test_json), json.loads(pyobj._as_json))
+        self.assertEqual(json.loads(pyobj._as_json), json.loads(as_json(pyobj)))
         self.assertTrue(compare_dicts(test_data, pyobj._as_dict))
+        self.assertTrue(compare_dicts(test_data, as_dict(pyobj)))
 
 
 if __name__ == '__main__':

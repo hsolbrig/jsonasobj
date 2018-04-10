@@ -28,7 +28,6 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 from typing import Union, List, Dict, Tuple
-from urllib import request
 from urllib.request import Request, urlopen
 
 from .extendednamespace import ExtendedNamespace
@@ -47,6 +46,7 @@ class JsonObj(ExtendedNamespace):
     """
     def __init__(self, **kwargs):
         """ Construct a JsonObj from set of keyword/value pairs
+
         :param kwargs: keyword/value pairs
         """
         ExtendedNamespace.__init__(self, **kwargs)
@@ -55,7 +55,8 @@ class JsonObj(ExtendedNamespace):
         return self[item] if item in self else default
 
     def _default(self, obj):
-        """ a function that returns a serializable version of obj or raises TypeError
+        """ return a serialized version of obj or raise a TypeError
+
         :param obj:
         :return: Serialized version of obj
         """
@@ -63,6 +64,7 @@ class JsonObj(ExtendedNamespace):
 
     def _as_json_obj(self) -> JsonTypes:
         """ Return jsonObj as pure json
+
         :return: Pure json image
         """
         return json.loads(self._as_json_dumps())
@@ -79,15 +81,18 @@ class JsonObj(ExtendedNamespace):
         return [(k, self[k]) for k in self.__dict__.keys()]
 
     @property
-    def _as_json(self, **kwargs) -> JsonTypes:
-        """ Convert a JsonObj into straight json
+    def _as_json(self, **kwargs) -> str:
+        """ Convert a JsonObj into straight json text
+
         :param kwargs: json.dumps arguments
         :return: JSON formatted str
         """
         return json.dumps(self, default=self._default, **kwargs)
 
     def _as_json_dumps(self, indent: str='   ', **kwargs) -> str:
-        """ Convert to a stringified json object.  This is the same as _as_json with the exception that it isn't
+        """ Convert to a stringified json object.
+
+        This is the same as _as_json with the exception that it isn't
         a property, meaning that we can actually pass arguments...
         :param indent: indent argument to dumps
         :param kwargs: other arguments for dumps
@@ -98,6 +103,7 @@ class JsonObj(ExtendedNamespace):
     @staticmethod
     def __as_list(value: List[JsonObjTypes]) -> List[JsonTypes]:
         """ Return a json array as a list
+
         :param value: array
         :return: array with JsonObj instances removed
         """
@@ -106,6 +112,7 @@ class JsonObj(ExtendedNamespace):
     @property
     def _as_dict(self) -> Dict[str, JsonTypes]:
         """ Convert a JsonObj into a straight dictionary
+
         :return: dictionary that cooresponds to the json object
         """
         return {k: v._as_dict if isinstance(v, JsonObj) else
@@ -115,6 +122,7 @@ class JsonObj(ExtendedNamespace):
 
 def loads(s: str, **kwargs) -> JsonObj:
     """ Convert a json_str into a JsonObj
+
     :param s: a str instance containing a JSON document
     :param kwargs: arguments see: json.load for details
     :return: JsonObj representing the json string
@@ -126,6 +134,7 @@ def loads(s: str, **kwargs) -> JsonObj:
 
 def load(source, **kwargs) -> JsonObj:
     """ Deserialize a JSON source.
+
     :param source: a URI, File name or a .read()-supporting file-like object containing a JSON document
     :param kwargs: arguments. see: json.load for details
     :return: JsonObj representing fp
@@ -145,3 +154,37 @@ def load(source, **kwargs) -> JsonObj:
         raise TypeError("Unexpected type {} for source {}".format(type(source), source))
 
     return loads(jsons, **kwargs)
+
+
+def as_dict(obj: JsonObj) -> Dict[str, JsonTypes]:
+    """ Convert a JsonObj into a straight dictionary
+
+    :return: dictionary that cooresponds to the json object
+    """
+    return obj._as_dict
+
+
+def as_list(obj: JsonObj) -> List[JsonTypes]:
+    """ Return a json array as a list
+
+    :param value: array
+    :return: array with JsonObj instances removed
+    """
+    return obj._as_list
+
+
+def as_json(obj: JsonObj, indent: str='   ', **kwargs) -> str:
+    """ Convert obj to json string representation.
+.
+       :param indent: indent argument to dumps
+       :param kwargs: other arguments for dumps
+       :return: JSON formatted string
+       """
+    return obj._as_json_dumps(indent, **kwargs)
+
+def _as_json_obj(obj: JsonObj) -> JsonTypes:
+    """ Return obj as pure python json (vs. JsonObj)
+
+    :return: Pure python json image
+    """
+    return obj._as_json_obj()

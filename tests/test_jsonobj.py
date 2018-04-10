@@ -31,6 +31,7 @@ import json
 from dict_compare import compare_dicts
 
 import jsonasobj
+from jsonasobj.jsonobj import as_json, as_dict
 
 test_json = """{
   "@context": {
@@ -70,6 +71,7 @@ class BasicFunctionsTestCase(unittest.TestCase):
         """
         py_obj = jsonasobj.loads(test_json)
         self.assertEqual(json.loads(test_json), json.loads(py_obj._as_json))
+        self.assertEqual(json.loads(test_json), json.loads(as_json(py_obj)))
 
     def test_setdefault(self):
         py_obj = jsonasobj.JsonObj()
@@ -77,3 +79,4 @@ class BasicFunctionsTestCase(unittest.TestCase):
         py_obj._setdefault('test', 'nada')
         py_obj._setdefault('test2', 'sama')
         self.assertTrue(compare_dicts(dict(test=dict(foo=17), test2="sama"), py_obj._as_dict))
+        self.assertTrue(compare_dicts(dict(test=dict(foo=17), test2="sama"), as_dict(py_obj)))

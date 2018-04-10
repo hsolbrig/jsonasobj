@@ -1,4 +1,5 @@
 import jsonasobj
+from jsonasobj.jsonobj import as_json, as_dict
 
 test_json = """{
   "@context": {
@@ -28,8 +29,8 @@ print(py_obj.name)
 print(py_obj['name'])
 print(py_obj.knows[0].name)
 print(py_obj['@context'].name)
-print(py_obj._as_json_dumps())
-print(py_obj._as_dict)
+print(as_json(py_obj))
+print(as_dict(py_obj))
 '''
 Result:
 

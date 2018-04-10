@@ -33,6 +33,7 @@ setup(
     author_email='solbrig.harold@mayo.edu',
     url='http://github.com/hsolbrig/jsonasobj',
     packages=['jsonasobj'],
+    tests_require=['yadict-compare'],
     package_dir={'': 'src'},
     license='BSD 3-Clause license',
     classifiers=[
