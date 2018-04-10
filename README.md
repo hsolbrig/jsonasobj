@@ -1,4 +1,10 @@
 # jsonasobj
+[![Pyversions](https://img.shields.io/pypi/pyversions/jsonasobj.svg)](https://pypi.python.org/pypi/jsonasobj)
+
+[![PyPi](https://version-image.appspot.com/pypi/?name=jsonasobj)](https://pypi.python.org/pypi/jsonasobj)
+
+## Revision History
+* 0.5.0 -- added non-protected access methods and changed copyright
 
 ## Introduction
 
