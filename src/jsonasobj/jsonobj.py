@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 import json
-from typing import Union, List, Dict, Tuple
+from typing import Union, List, Dict, Tuple, Optional
 from urllib.request import Request, urlopen
 
 from .extendednamespace import ExtendedNamespace
@@ -132,6 +131,7 @@ def load(source, **kwargs) -> JsonObj:
 def as_dict(obj: JsonObj) -> Dict[str, JsonTypes]:
     """ Convert a JsonObj into a straight dictionary
 
+    :param obj: pseudo 'self'
     :return: dictionary that cooresponds to the json object
     """
     return obj._as_dict
@@ -140,24 +140,42 @@ def as_dict(obj: JsonObj) -> Dict[str, JsonTypes]:
 def as_list(obj: JsonObj) -> List[JsonTypes]:
     """ Return a json array as a list
 
-    :param value: array
-    :return: array with JsonObj instances removed
+    :param obj: pseudo 'self'
     """
     return obj._as_list
 
 
-def as_json(obj: JsonObj, indent: str='   ', **kwargs) -> str:
+def as_json(obj: JsonObj, indent: Optional[str]='   ', **kwargs) -> str:
     """ Convert obj to json string representation.
-.
-       :param indent: indent argument to dumps
-       :param kwargs: other arguments for dumps
-       :return: JSON formatted string
+
+        :param obj: pseudo 'self'
+        :param indent: indent argument to dumps
+        :param kwargs: other arguments for dumps
+        :return: JSON formatted string
        """
     return obj._as_json_dumps(indent, **kwargs)
 
-def _as_json_obj(obj: JsonObj) -> JsonTypes:
-    """ Return obj as pure python json (vs. JsonObj)
 
-    :return: Pure python json image
+def as_json_obj(obj: JsonObj) -> JsonTypes:
+    """ Return obj as pure python json (vs. JsonObj)
+        :param obj: pseudo 'self'
+        :return: Pure python json image
     """
     return obj._as_json_obj()
+
+
+def get(obj: JsonObj, item: str, default: JsonObjTypes=None) -> JsonObjTypes:
+    """ Dictionary get routine """
+    return obj._get(item, default)
+
+
+def setdefault(obj: JsonObj, k: str, value: Union[Dict, JsonTypes]) -> JsonObjTypes:
+    """ Dictionary setdefault reoutine """
+    return obj._setdefault(k, value)
+
+
+def items(obj: JsonObj) -> List[Tuple[str, JsonObjTypes]]:
+    """ Same as dict items() except that the values are JsonObjs instead of vanilla dictionaries
+    :return:
+    """
+    return obj._items()
