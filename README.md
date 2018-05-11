@@ -5,6 +5,7 @@
 
 ## Revision History
 * 1.2.0 -- added non-protected access methods and changed copyright
+* 1.2.1 -- fixed issue #4
 
 ## Introduction
 
