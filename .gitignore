@@ -58,9 +58,15 @@ docs/_build/
 
 # PyBuilder
 target/
+venv/
 
 #Ipython Notebook
 .ipynb_checkpoints
 
 #JetBrains
 .idea/
+
+#Mac
+.DS_Store
+
+
