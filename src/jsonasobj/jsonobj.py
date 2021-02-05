@@ -1,5 +1,5 @@
 import json
-from typing import Union, List, Dict, Tuple, Optional, Callable
+from typing import Union, List, Dict, Tuple, Optional, Callable, Any
 from urllib.request import Request, urlopen
 
 from .extendednamespace import ExtendedNamespace
@@ -16,12 +16,16 @@ class JsonObj(ExtendedNamespace):
     identifier is represented as a first-class member of the objects.  JSON identifiers that begin with "_" are
     disallowed in this implementation.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, _if_missing:Callable[[str], Any] = None, **kwargs):
         """ Construct a JsonObj from set of keyword/value pairs
 
         :param kwargs: keyword/value pairs
         """
         ExtendedNamespace.__init__(self, **kwargs)
+
+    @staticmethod
+    def _if_missing(item):
+        pass
 
     def _get(self, item: str, default: JsonObjTypes=None) -> JsonObjTypes:
         return self[item] if item in self else default
@@ -52,6 +56,12 @@ class JsonObj(ExtendedNamespace):
         :return:
         """
         return [(k, self[k]) for k in self.__dict__.keys()]
+
+    def __getitem__(self, item):
+        return self._if_missing(item) if item not in self.__dict__ and self._if_missing != JsonObj._if_missing else super().__getitem__(item)
+
+    def __getattr__(self, item):
+        return self._if_missing(item) if item not in self.__dict__ and self._if_missing != JsonObj._if_missing else getattr(super(), item)
 
     @property
     def _as_json(self) -> str:
