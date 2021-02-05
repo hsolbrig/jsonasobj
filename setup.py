@@ -29,7 +29,7 @@ setup(
     description='JSON as python objects',
     long_description=long_description,
     author='Harold Solbrig',
-    author_email='solbrig.harold@mayo.edu',
+    author_email='solbrig@jhu.edu',
     url='http://github.com/hsolbrig/jsonasobj',
     packages=['jsonasobj'],
     tests_require=['yadict-compare'],
@@ -39,13 +39,15 @@ setup(
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: Apache Software License',
+        'License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Internet',
         'Topic :: Software Development :: Libraries',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7'
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9'
     ],
 )

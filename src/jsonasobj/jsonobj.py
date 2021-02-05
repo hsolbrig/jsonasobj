@@ -1,5 +1,5 @@
 import json
-from typing import Union, List, Dict, Tuple, Optional
+from typing import Union, List, Dict, Tuple, Optional, Callable
 from urllib.request import Request, urlopen
 
 from .extendednamespace import ExtendedNamespace
@@ -26,13 +26,14 @@ class JsonObj(ExtendedNamespace):
     def _get(self, item: str, default: JsonObjTypes=None) -> JsonObjTypes:
         return self[item] if item in self else default
 
-    def _default(self, obj):
+    def _default(self, obj, filtr: Callable[[dict], dict] = lambda e: e):
         """ return a serialized version of obj or raise a TypeError
 
         :param obj:
+        :param filtr: dictionary filter
         :return: Serialized version of obj
         """
-        return obj.__dict__ if isinstance(obj, JsonObj) else json.JSONDecoder().decode(obj)
+        return filtr(obj.__dict__) if isinstance(obj, JsonObj) else json.JSONDecoder().decode(obj)
 
     def _as_json_obj(self) -> JsonTypes:
         """ Return jsonObj as pure json
@@ -53,24 +54,24 @@ class JsonObj(ExtendedNamespace):
         return [(k, self[k]) for k in self.__dict__.keys()]
 
     @property
-    def _as_json(self, **kwargs) -> str:
+    def _as_json(self) -> str:
         """ Convert a JsonObj into straight json text
 
-        :param kwargs: json.dumps arguments
         :return: JSON formatted str
         """
-        return json.dumps(self, default=self._default, **kwargs)
+        return json.dumps(self, default=self._default)
 
-    def _as_json_dumps(self, indent: str='   ', **kwargs) -> str:
+    def _as_json_dumps(self, indent: str = '   ', filtr: Callable[[dict], dict] = lambda e: e, **kwargs) -> str:
         """ Convert to a stringified json object.
 
         This is the same as _as_json with the exception that it isn't
         a property, meaning that we can actually pass arguments...
         :param indent: indent argument to dumps
+        :param filtr: dictionary filter
         :param kwargs: other arguments for dumps
         :return: JSON formatted string
         """
-        return json.dumps(self, default=self._default, indent=indent, **kwargs)
+        return json.dumps(self, default=lambda obj: self._default(obj, filtr), indent=indent, **kwargs)
 
     @staticmethod
     def __as_list(value: List[JsonObjTypes]) -> List[JsonTypes]:
@@ -145,15 +146,16 @@ def as_list(obj: JsonObj) -> List[JsonTypes]:
     return obj._as_list
 
 
-def as_json(obj: JsonObj, indent: Optional[str]='   ', **kwargs) -> str:
+def as_json(obj: JsonObj, indent: Optional[str] = '   ', filtr: Callable[[dict], dict] = lambda e: e, **kwargs) -> str:
     """ Convert obj to json string representation.
 
         :param obj: pseudo 'self'
         :param indent: indent argument to dumps
+        :param filtr: filter to remove unwanted elements
         :param kwargs: other arguments for dumps
         :return: JSON formatted string
        """
-    return obj._as_json_dumps(indent, **kwargs)
+    return obj._as_json_dumps(indent, filtr, **kwargs)
 
 
 def as_json_obj(obj: JsonObj) -> JsonTypes:
