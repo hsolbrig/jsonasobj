@@ -71,7 +71,7 @@ class JsonObj(ExtendedNamespace):
         """
         return json.dumps(self, default=self._default)
 
-    def _as_json_dumps(self, indent: str = '   ', filtr: Callable[[dict], dict] = lambda e: e, **kwargs) -> str:
+    def _as_json_dumps(self, indent: str = '   ', filtr: Callable[[dict], dict] = None, **kwargs) -> str:
         """ Convert to a stringified json object.
 
         This is the same as _as_json with the exception that it isn't
@@ -81,7 +81,8 @@ class JsonObj(ExtendedNamespace):
         :param kwargs: other arguments for dumps
         :return: JSON formatted string
         """
-        return json.dumps(self, default=lambda obj: self._default(obj, filtr), indent=indent, **kwargs)
+        return json.dumps(self, default=lambda obj: self._default(obj, filtr) if filtr else self._default(obj),
+                          indent=indent, **kwargs)
 
     @staticmethod
     def __as_list(value: List[JsonObjTypes]) -> List[JsonTypes]:
@@ -156,7 +157,7 @@ def as_list(obj: JsonObj) -> List[JsonTypes]:
     return obj._as_list
 
 
-def as_json(obj: JsonObj, indent: Optional[str] = '   ', filtr: Callable[[dict], dict] = lambda e: e, **kwargs) -> str:
+def as_json(obj: JsonObj, indent: Optional[str] = '   ', filtr: Callable[[dict], dict] = None, **kwargs) -> str:
     """ Convert obj to json string representation.
 
         :param obj: pseudo 'self'
@@ -165,7 +166,7 @@ def as_json(obj: JsonObj, indent: Optional[str] = '   ', filtr: Callable[[dict],
         :param kwargs: other arguments for dumps
         :return: JSON formatted string
        """
-    return obj._as_json_dumps(indent, filtr, **kwargs)
+    return obj._as_json_dumps(indent, filtr=filtr, **kwargs)
 
 
 def as_json_obj(obj: JsonObj) -> JsonTypes:

@@ -8,5 +8,6 @@
 * 1.2.0 -- added non-protected access methods and changed copyright
 * 1.2.1 -- fixed issue #4
 * 1.3.0 -- added user filtr to as_json and _as_json_dumps functions, fixed issue #5
+* 1.3.1 -- adjusted filtr so objects 
 
 **See:** [Jupyter notebook](notebooks/readme.ipynb) for documentation
