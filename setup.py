@@ -14,7 +14,6 @@ except ImportError:
     from distutils.core import setup
 
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 import jsonasobj
 
 
@@ -30,11 +29,10 @@ setup(
     long_description=long_description,
     author='Harold Solbrig',
     author_email='solbrig@jhu.edu',
-    url='http://github.com/hsolbrig/jsonasobj',
+    url='https://github.com/hsolbrig/jsonasobj',
     packages=['jsonasobj'],
     tests_require=['yadict-compare'],
-    package_dir={'': 'src'},
-    license='Apache 2.0',
+    license='CC0 1.0 Universal',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',

@@ -16,28 +16,41 @@ class JsonObj(ExtendedNamespace):
     identifier is represented as a first-class member of the objects.  JSON identifiers that begin with "_" are
     disallowed in this implementation.
     """
-    def __init__(self, _if_missing:Callable[[str], Any] = None, **kwargs):
+    def __init__(self, list_or_dict: Optional[Union[List, Dict]] = None, *, _if_missing: Callable[[str], Any] = None,
+                 **kwargs) -> None:
         """ Construct a JsonObj from set of keyword/value pairs
 
+        :param list_or_dict: An outermost dictionary or list
+        :param _if_missing: Function to call if attempt is made to access an undefined value
         :param kwargs: keyword/value pairs
         """
-        ExtendedNamespace.__init__(self, **kwargs)
+        if list_or_dict is not None:
+            assert len(kwargs) == 0, "Constructor can't have both a single item and a dict"
+            if isinstance(list_or_dict, dict):
+                ExtendedNamespace.__init__(self, **{k: JsonObj(**v) if isinstance(v, dict) else v
+                                                    for k, v in list_or_dict.items() if not k.startswith('_')})
+            else:
+                ExtendedNamespace.__init__(self, _root=list_or_dict)
+        else:
+            ExtendedNamespace.__init__(self, **{k: JsonObj(**v) if isinstance(v, dict) else v
+                                                for k, v in kwargs.items() if not k.startswith('_')})
+        super().__setitem__('_if_missing', _if_missing)
 
-    @staticmethod
-    def _if_missing(item):
-        pass
+    def _no_underbars(self) -> dict:
+        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
 
-    def _get(self, item: str, default: JsonObjTypes=None) -> JsonObjTypes:
+    def _get(self, item: str, default: JsonObjTypes = None) -> JsonObjTypes:
         return self[item] if item in self else default
 
-    def _default(self, obj, filtr: Callable[[dict], dict] = lambda e: e):
+    @staticmethod
+    def _default(obj, filtr: Callable[[dict], dict] = lambda e: e):
         """ return a serialized version of obj or raise a TypeError
 
         :param obj:
         :param filtr: dictionary filter
         :return: Serialized version of obj
         """
-        return filtr(obj.__dict__) if isinstance(obj, JsonObj) else json.JSONDecoder().decode(obj)
+        return filtr(obj._no_underbars()) if isinstance(obj, JsonObj) else json.JSONDecoder().decode(obj)
 
     def _as_json_obj(self) -> JsonTypes:
         """ Return jsonObj as pure json
@@ -48,20 +61,34 @@ class JsonObj(ExtendedNamespace):
 
     def _setdefault(self, k: str, value: Union[Dict, JsonTypes]) -> JsonObjTypes:
         if k not in self:
-            self[k] = JsonObj(**value) if isinstance(value, dict) else value
+            self[k] = JsonObj(_if_missing=self._if_missing, **value) if isinstance(value, dict) else value
         return self[k]
 
     def _items(self) -> List[Tuple[str, JsonObjTypes]]:
         """ Same as dict items() except that the values are JsonObjs instead of vanilla dictionaries
         :return:
         """
-        return [(k, self[k]) for k in self.__dict__.keys()]
+        return [(k, self[k]) for k in self._no_underbars().keys() if not k.startswith('_')]
 
     def __getitem__(self, item):
-        return self._if_missing(item) if item not in self.__dict__ and self._if_missing != JsonObj._if_missing else super().__getitem__(item)
+        return self._root[item] if '_root' in self else \
+            self._if_missing(item) if item not in self.__dict__ and self._if_missing else\
+            super().__getitem__(item)
 
     def __getattr__(self, item):
-        return self._if_missing(item) if item not in self.__dict__ and self._if_missing != JsonObj._if_missing else getattr(super(), item)
+        if self._if_missing:
+            return self._if_missing(item)
+        raise AttributeError(f"'{type(self)}' object has no attribute '{item}'")
+
+    def __setattr__(self, key, value):
+        if key.startswith('_') and key not in('_if_missing', '_root'):
+            raise ValueError(f"{key} - underscore not allowed")
+        super().__setattr__(key, value)
+
+    def __setitem__(self, key, value):
+        if key.startswith('_'):
+            raise ValueError(f"{key} - underscore not allowed")
+        super().__setitem__(key, value)
 
     @property
     def _as_json(self) -> str:
@@ -99,9 +126,8 @@ class JsonObj(ExtendedNamespace):
 
         :return: dictionary that cooresponds to the json object
         """
-        return {k: v._as_dict if isinstance(v, JsonObj) else
-                   self.__as_list(v) if isinstance(v, list) else
-                   v for k, v in self.__dict__.items()}
+        return {k: v._as_dict if isinstance(v, JsonObj) else self.__as_list(v) if isinstance(v, list) else
+                v for k, v in self.__dict__.items() if not k.startswith('_')}
 
 
 def loads(s: str, **kwargs) -> JsonObj:
@@ -140,16 +166,16 @@ def load(source, **kwargs) -> JsonObj:
     return loads(jsons, **kwargs)
 
 
-def as_dict(obj: JsonObj) -> Dict[str, JsonTypes]:
+def as_dict(obj: Union[JsonObj, List]) -> Union[List, Dict[str, JsonTypes]]:
     """ Convert a JsonObj into a straight dictionary
 
     :param obj: pseudo 'self'
     :return: dictionary that cooresponds to the json object
     """
-    return obj._as_dict
+    return [e._as_dict if isinstance(e, JsonObj) else e for e in obj] if isinstance(obj, list) else obj._as_dict
 
 
-def as_list(obj: JsonObj) -> List[JsonTypes]:
+def as_list(obj: Union[JsonObj, List]) -> List[JsonTypes]:
     """ Return a json array as a list
 
     :param obj: pseudo 'self'
@@ -157,7 +183,8 @@ def as_list(obj: JsonObj) -> List[JsonTypes]:
     return obj._as_list
 
 
-def as_json(obj: JsonObj, indent: Optional[str] = '   ', filtr: Callable[[dict], dict] = None, **kwargs) -> str:
+def as_json(obj: Union[JsonObj, List], indent: Optional[str] = '   ',
+            filtr: Callable[[dict], dict] = None, **kwargs) -> str:
     """ Convert obj to json string representation.
 
         :param obj: pseudo 'self'
@@ -166,18 +193,22 @@ def as_json(obj: JsonObj, indent: Optional[str] = '   ', filtr: Callable[[dict],
         :param kwargs: other arguments for dumps
         :return: JSON formatted string
        """
-    return obj._as_json_dumps(indent, filtr=filtr, **kwargs)
+    if isinstance(obj, JsonObj) and '_root' in obj:
+        obj = obj._root
+    return json.dumps(obj, default=lambda obj: JsonObj._default(obj, filtr) if filtr else JsonObj._default(obj),
+                      indent=indent, **kwargs)
 
 
-def as_json_obj(obj: JsonObj) -> JsonTypes:
+def as_json_obj(obj: Union[JsonObj, List]) -> JsonTypes:
     """ Return obj as pure python json (vs. JsonObj)
         :param obj: pseudo 'self'
         :return: Pure python json image
     """
-    return obj._as_json_obj()
+    return [e._as_json_obj() if isinstance(e, JsonObj) else e for e in obj] \
+        if isinstance(obj, list) else obj._as_json_obj()
 
 
-def get(obj: JsonObj, item: str, default: JsonObjTypes=None) -> JsonObjTypes:
+def get(obj: JsonObj, item: str, default: JsonObjTypes = None) -> JsonObjTypes:
     """ Dictionary get routine """
     return obj._get(item, default)
 
