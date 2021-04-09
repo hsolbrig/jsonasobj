@@ -2,7 +2,7 @@ from argparse import Namespace
 
 
 class ExtendedNamespace(Namespace):
-    """ A combination of a namespace and a dictionary.  This allows direct acess to python properties plus
+    """ A combination of a namespace and a dictionary.  This allows direct access to python properties plus
     dictionary access to everything.
     """
     def __init__(self, **kwargs):
