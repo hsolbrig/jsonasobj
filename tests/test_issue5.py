@@ -46,7 +46,7 @@ class MissingObjectTestCase(unittest.TestCase):
         with self.assertRaises(KeyError) as e:
             pyobj['12345']
         self.assertIn("'12345'", str(e.exception))
-        pyobj._if_missing = lambda item: f"Missing: {item}"
+        pyobj._if_missing = lambda obj, item: (True, f"Missing: {item}")
         self.assertEqual("Missing: missing_item1", pyobj.missing_item1)
         self.assertEqual("Missing: 12345", pyobj['12345'])
 

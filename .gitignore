@@ -69,4 +69,5 @@ venv/
 #Mac
 .DS_Store
 
+.Pipfile.lock
 

@@ -1,0 +1,32 @@
+CHANGES
+=======
+
+v2.0.0
+------
+
+* Fix issues #7 and #8
+* Fix typo in docstring
+* Updated licence file to CC0
+* Fix for issue #6
+* Remove some cruft
+* Fix issue #5
+* Added ability to filter on dumps and \_as\_json\_dumps
+* Switched documentation over to Jupyter Notebook
+* Tweaked badges
+* Added tox test and restricted versions to 3.6 on..
+* Fixed issue #3
+* Fixed issue #4
+* Fixed version identiier
+* Update README.md file
+* Updated license and copyright statements
+* Adds non-protected access methods
+* Adds "load" and "loads" to \_\_all\_\_ and changes case of JsonObj
+* Fix issue #1
+* Adds accept header to url request
+* Add full typing signatures to methods.  \`load\` function will now take a file name or a URL
+* Changes JSONObj.get and JSONObj.setdefault functions to JSONObj.\_get and JSONObj.\_setdefault
+* ExtendedNamespace \_\_iter\_\_ returns \_\_dict\_\_ iterator rather than dict
+* added \_get function to simplify a common idiom
+* Added \_items() function because I kept stumbling over the \_as\_dict().items()
+* Initial submission
+* Initial commit

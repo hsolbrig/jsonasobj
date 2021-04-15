@@ -1,6 +1,6 @@
 import json
 from typing import Union, List, Dict, Tuple, Optional, Callable, Any
-from urllib.request import Request, urlopen
+from hbreader import hbread
 
 from .extendednamespace import ExtendedNamespace
 
@@ -16,78 +16,131 @@ class JsonObj(ExtendedNamespace):
     identifier is represented as a first-class member of the objects.  JSON identifiers that begin with "_" are
     disallowed in this implementation.
     """
-    def __init__(self, list_or_dict: Optional[Union[List, Dict]] = None, *, _if_missing: Callable[[str], Any] = None,
+
+    def __init__(self, list_or_dict: Optional[Union[List, Dict]] = None, *,
+                 _if_missing: Callable[["JsonObj", str], Tuple[bool, Any]] = None,
                  **kwargs) -> None:
         """ Construct a JsonObj from set of keyword/value pairs
 
-        :param list_or_dict: An outermost dictionary or list
-        :param _if_missing: Function to call if attempt is made to access an undefined value
-        :param kwargs: keyword/value pairs
+        :param list_or_dict: A list or dictionary that can be used to construct the object
+        :param _if_missing: Function to call if attempt is made to access an undefined value.  Function takes JsonObj
+        instance and parameter as input and returns a tuple -- handled (y or n) and result.  If handled is 'n' inline
+        processing proceeds.
+        :param kwargs: A dictionary as an alternative constructor.
         """
+        if _if_missing and _if_missing != self._if_missing:
+            self._set_hidden('_if_missing', _if_missing)
         if list_or_dict is not None:
-            assert len(kwargs) == 0, "Constructor can't have both a single item and a dict"
-            if isinstance(list_or_dict, dict):
-                ExtendedNamespace.__init__(self, **{k: JsonObj(**v) if isinstance(v, dict) else v
-                                                    for k, v in list_or_dict.items() if not k.startswith('_')})
+            if len(kwargs):
+                raise TypeError("Constructor can't have both a single item and a dict")
+            if isinstance(list_or_dict, (dict, JsonObj)):
+                self._init_from_dict(list_or_dict)
+            elif isinstance(list_or_dict, list):
+                ExtendedNamespace.__init__(self,
+                                           _root=[JsonObj(e) if isinstance(e, (dict, list)) else
+                                                  e for e in list_or_dict])
             else:
-                ExtendedNamespace.__init__(self, _root=list_or_dict)
+                raise TypeError("JSON Object can only be a list or dictionary")
         else:
-            ExtendedNamespace.__init__(self, **{k: JsonObj(**v) if isinstance(v, dict) else v
-                                                for k, v in kwargs.items() if not k.startswith('_')})
-        super().__setitem__('_if_missing', _if_missing)
-
-    def _no_underbars(self) -> dict:
-        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
-
-    def _get(self, item: str, default: JsonObjTypes = None) -> JsonObjTypes:
-        return self[item] if item in self else default
+            self._init_from_dict(kwargs)
 
     @staticmethod
+    def _if_missing(obj: "JsonObj", item: str) -> Tuple[bool, Any]:
+        return False, None
+
+    def _init_from_dict(self, d: Union[dict, "JsonObj"]) -> None:
+        """ Construct a JsonObj from a dictionary or another JsonObj """
+        if isinstance(d, dict):
+            if self._has_underbars(d):
+                raise ValueError(f"{self._first_underbar(d)}: underscore not allowed")
+        else:
+            d = d._as_dict
+        ExtendedNamespace.__init__(self, _if_missing=self._if_missing, **{k: JsonObj(**v) if isinstance(v, dict) else v
+                                                                          for k, v in d.items()})
+
+    @staticmethod
+    def _has_underbars(d: dict) -> bool:
+        """ Return true if anything in dictionary d starts with an underbar """
+        return any(k.startswith('_') for k in d.keys())
+
+    @staticmethod
+    def _first_underbar(d: dict) -> Optional[str]:
+        """ Return the first underbar in d, if any """
+        for k in d.keys():
+            if k.startswith('_'):
+                return k
+        return None
+
+    def _set_hidden(self, key, value):
+        """ Add a hidden value w/ a leading underbar """
+        super().__setattr__(key, value)
+
+    # ===================================================
+    # JSON Serializer method
+    # ===================================================
+    @staticmethod
     def _default(obj, filtr: Callable[[dict], dict] = lambda e: e):
-        """ return a serialized version of obj or raise a TypeError
+        """ return a serialized version of obj or raise a TypeError.  Used by the JSON serializer
 
         :param obj:
         :param filtr: dictionary filter
         :return: Serialized version of obj
         """
-        return filtr(obj._no_underbars()) if isinstance(obj, JsonObj) else json.JSONDecoder().decode(obj)
+        return filtr(obj._as_dict) if isinstance(obj, JsonObj) else json.JSONDecoder().decode(obj)
 
-    def _as_json_obj(self) -> JsonTypes:
-        """ Return jsonObj as pure json
-
-        :return: Pure json image
-        """
-        return json.loads(self._as_json_dumps())
+    # ===================================================
+    # Underscore equivalent of useful dictionary functions
+    # ===================================================
+    def _get(self, item: str, default: JsonObjTypes = None) -> JsonObjTypes:
+        """ Equivalent to dictionary get function w/o polluting namespace """
+        return self[item] if item in self else default
 
     def _setdefault(self, k: str, value: Union[Dict, JsonTypes]) -> JsonObjTypes:
+        """ Equivalent of dictionary setdefault without messing in namespace """
         if k not in self:
             self[k] = JsonObj(_if_missing=self._if_missing, **value) if isinstance(value, dict) else value
         return self[k]
 
+    def _keys(self) -> List[str]:
+        """ Return all non-hidden keys """
+        return [k for k in self.__dict__.keys() if not k.startswith('_')]
+
     def _items(self) -> List[Tuple[str, JsonObjTypes]]:
-        """ Same as dict items() except that the values are JsonObjs instead of vanilla dictionaries
-        :return:
-        """
-        return [(k, self[k]) for k in self._no_underbars().keys() if not k.startswith('_')]
+        """ Return all non-hidden items """
+        return [(k, v) for k, v in self.__dict__.items() if not k.startswith('_')]
+
+    # ===================================================
+    # Various converters -- use exposed methods in place of underscores
+    # ===================================================
+    def _as_json_obj(self) -> JsonTypes:
+        """ Return self as pure json """
+        return json.loads(self._as_json_dumps())
 
     def __getitem__(self, item):
-        return self._root[item] if '_root' in self else \
-            self._if_missing(item) if item not in self.__dict__ and self._if_missing else\
-            super().__getitem__(item)
+        if '_root' in self:
+            return self._root[item]
+        else:
+            found, val = self._if_missing(self, item)
+            if found:
+                return val
+            else:
+                return super().__getitem__(item)
 
     def __getattr__(self, item):
-        if self._if_missing:
-            return self._if_missing(item)
-        raise AttributeError(f"'{type(self)}' object has no attribute '{item}'")
+        found, val = self._if_missing(self, item)
+        if found:
+            return val
+        else:
+            return super().__getattribute__(item)
 
     def __setattr__(self, key, value):
-        if key.startswith('_') and key not in('_if_missing', '_root'):
-            raise ValueError(f"{key} - underscore not allowed")
-        super().__setattr__(key, value)
+        if key.startswith('_') and key not in ('_if_missing', '_root'):
+            raise ValueError(f"{key}: underscore not allowed")
+        super().__setattr__(key, JsonObj(value) if isinstance(value, dict) else value)
 
     def __setitem__(self, key, value):
         if key.startswith('_'):
-            raise ValueError(f"{key} - underscore not allowed")
+            raise ValueError(f"{key}: underscore not allowed")
         super().__setitem__(key, value)
 
     @property
@@ -112,7 +165,7 @@ class JsonObj(ExtendedNamespace):
                           indent=indent, **kwargs)
 
     @staticmethod
-    def __as_list(value: List[JsonObjTypes]) -> List[JsonTypes]:
+    def _as_list(value: List[JsonObjTypes]) -> List[JsonTypes]:
         """ Return a json array as a list
 
         :param value: array
@@ -126,8 +179,8 @@ class JsonObj(ExtendedNamespace):
 
         :return: dictionary that cooresponds to the json object
         """
-        return {k: v._as_dict if isinstance(v, JsonObj) else self.__as_list(v) if isinstance(v, list) else
-                v for k, v in self.__dict__.items() if not k.startswith('_')}
+        return {k: v._as_dict if isinstance(v, JsonObj) else self._as_list(v) if isinstance(v, list) else v
+                for k, v in self._items()}
 
 
 def loads(s: str, **kwargs) -> JsonObj:
@@ -149,21 +202,7 @@ def load(source, **kwargs) -> JsonObj:
     :param kwargs: arguments. see: json.load for details
     :return: JsonObj representing fp
     """
-    if isinstance(source, str):
-        if '://' in source:
-            req = Request(source)
-            req.add_header("Accept", "application/json, text/json;q=0.9")
-            with urlopen(req) as response:
-                jsons = response.read()
-        else:
-            with open(source) as f:
-                jsons = f.read()
-    elif hasattr(source, "read"):
-        jsons = source.read()
-    else:
-        raise TypeError("Unexpected type {} for source {}".format(type(source), source))
-
-    return loads(jsons, **kwargs)
+    return loads(hbread(source, accept_header="application/json, text/json;q=0.9"), **kwargs)
 
 
 def as_dict(obj: Union[JsonObj, List]) -> Union[List, Dict[str, JsonTypes]]:
@@ -195,7 +234,7 @@ def as_json(obj: Union[JsonObj, List], indent: Optional[str] = '   ',
        """
     if isinstance(obj, JsonObj) and '_root' in obj:
         obj = obj._root
-    return json.dumps(obj, default=lambda obj: JsonObj._default(obj, filtr) if filtr else JsonObj._default(obj),
+    return json.dumps(obj, default=lambda o: JsonObj._default(o, filtr) if filtr else JsonObj._default(o),
                       indent=indent, **kwargs)
 
 
@@ -216,6 +255,11 @@ def get(obj: JsonObj, item: str, default: JsonObjTypes = None) -> JsonObjTypes:
 def setdefault(obj: JsonObj, k: str, value: Union[Dict, JsonTypes]) -> JsonObjTypes:
     """ Dictionary setdefault reoutine """
     return obj._setdefault(k, value)
+
+
+def keys(obj: JsonObj) -> List[str]:
+    """ same as dict keys() without polluting the namespace """
+    return obj._keys()
 
 
 def items(obj: JsonObj) -> List[Tuple[str, JsonObjTypes]]:

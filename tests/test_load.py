@@ -3,6 +3,8 @@ import unittest
 
 import os
 
+from jsonasobj import JsonObj
+
 
 class LoadTestCase(unittest.TestCase):
     def test_load_file(self):
@@ -29,8 +31,8 @@ class LoadTestCase(unittest.TestCase):
         json_fname = os.path.join(os.path.split(os.path.abspath(__file__))[0], 'filex.json')
         with self.assertRaises(FileNotFoundError):
             json_obj = load(json_fname)
-        with self.assertRaises(TypeError):
-            load(dict())
+        self.assertEqual(JsonObj(), load(dict()))
+
 
     @unittest.skipIf(True, "FHIR servers no longer appear to do redirects (correctly)")
     def test_load_redirect(self):
