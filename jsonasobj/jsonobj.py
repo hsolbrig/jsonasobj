@@ -1,5 +1,5 @@
 import json
-from typing import Union, List, Dict, Tuple, Optional, Callable, Any
+from typing import Union, List, Dict, Tuple, Optional, Callable, Any, Iterator
 from hbreader import hbread
 
 from .extendednamespace import ExtendedNamespace
@@ -9,6 +9,9 @@ JsonObjTypes = Union["JsonObj", List["JsonObjTypes"], str, bool, int, float, Non
 
 # Types in the pure JSON representation
 JsonTypes = Union[Dict[str, "JsonTypes"], List["JsonTypes"], str, bool, int, float, None]
+
+# Control variables -- note that subclasses can add to this list
+hide = ['_if_missing', '_root']
 
 
 class JsonObj(ExtendedNamespace):
@@ -29,7 +32,7 @@ class JsonObj(ExtendedNamespace):
         :param kwargs: A dictionary as an alternative constructor.
         """
         if _if_missing and _if_missing != self._if_missing:
-            self._set_hidden('_if_missing', _if_missing)
+            self._if_missing = _if_missing
         if list_or_dict is not None:
             if len(kwargs):
                 raise TypeError("Constructor can't have both a single item and a dict")
@@ -50,30 +53,10 @@ class JsonObj(ExtendedNamespace):
 
     def _init_from_dict(self, d: Union[dict, "JsonObj"]) -> None:
         """ Construct a JsonObj from a dictionary or another JsonObj """
-        if isinstance(d, dict):
-            if self._has_underbars(d):
-                raise ValueError(f"{self._first_underbar(d)}: underscore not allowed")
-        else:
+        if not isinstance(d, dict):
             d = d._as_dict
         ExtendedNamespace.__init__(self, _if_missing=self._if_missing, **{k: JsonObj(**v) if isinstance(v, dict) else v
                                                                           for k, v in d.items()})
-
-    @staticmethod
-    def _has_underbars(d: dict) -> bool:
-        """ Return true if anything in dictionary d starts with an underbar """
-        return any(k.startswith('_') for k in d.keys())
-
-    @staticmethod
-    def _first_underbar(d: dict) -> Optional[str]:
-        """ Return the first underbar in d, if any """
-        for k in d.keys():
-            if k.startswith('_'):
-                return k
-        return None
-
-    def _set_hidden(self, key, value):
-        """ Add a hidden value w/ a leading underbar """
-        super().__setattr__(key, value)
 
     # ===================================================
     # JSON Serializer method
@@ -103,11 +86,15 @@ class JsonObj(ExtendedNamespace):
 
     def _keys(self) -> List[str]:
         """ Return all non-hidden keys """
-        return [k for k in self.__dict__.keys() if not k.startswith('_')]
+        for k in self.__dict__.keys():
+            if k not in hide:
+                yield k
 
     def _items(self) -> List[Tuple[str, JsonObjTypes]]:
         """ Return all non-hidden items """
-        return [(k, v) for k, v in self.__dict__.items() if not k.startswith('_')]
+        for k, v in self.__dict__.items():
+            if k not in hide:
+                yield k, v
 
     # ===================================================
     # Various converters -- use exposed methods in place of underscores
@@ -134,14 +121,7 @@ class JsonObj(ExtendedNamespace):
             return super().__getattribute__(item)
 
     def __setattr__(self, key, value):
-        if key.startswith('_') and key not in ('_if_missing', '_root'):
-            raise ValueError(f"{key}: underscore not allowed")
         super().__setattr__(key, JsonObj(value) if isinstance(value, dict) else value)
-
-    def __setitem__(self, key, value):
-        if key.startswith('_'):
-            raise ValueError(f"{key}: underscore not allowed")
-        super().__setitem__(key, value)
 
     @property
     def _as_json(self) -> str:
@@ -234,7 +214,8 @@ def as_json(obj: Union[JsonObj, List], indent: Optional[str] = '   ',
        """
     if isinstance(obj, JsonObj) and '_root' in obj:
         obj = obj._root
-    return json.dumps(obj, default=lambda o: JsonObj._default(o, filtr) if filtr else JsonObj._default(o),
+    return obj._as_json_dumps(indent, filtr=filtr, **kwargs) if isinstance(obj, JsonObj) else \
+        json.dumps(obj, default=lambda o: JsonObj._default(o, filtr) if filtr else JsonObj._default(o),
                       indent=indent, **kwargs)
 
 
@@ -257,12 +238,12 @@ def setdefault(obj: JsonObj, k: str, value: Union[Dict, JsonTypes]) -> JsonObjTy
     return obj._setdefault(k, value)
 
 
-def keys(obj: JsonObj) -> List[str]:
+def keys(obj: JsonObj) -> Iterator[str]:
     """ same as dict keys() without polluting the namespace """
     return obj._keys()
 
 
-def items(obj: JsonObj) -> List[Tuple[str, JsonObjTypes]]:
+def items(obj: JsonObj) -> Iterator[Tuple[str, JsonObjTypes]]:
     """ Same as dict items() except that the values are JsonObjs instead of vanilla dictionaries
     :return:
     """

@@ -1,6 +1,9 @@
 CHANGES
 =======
 
+* Ignore Pipfile.lock
+* Fairly extensive refactoring
+
 v2.0.0
 ------
 

@@ -8,3 +8,5 @@ hbreader = "*"
 
 [dev-packages]
 yadict-compare = "*"
+requests = "*"
+pyjsg = "*"

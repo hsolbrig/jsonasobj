@@ -7,12 +7,12 @@ from jsonasobj import JsonObj
 class Root(JsonObj):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._set_hidden('_initialized', True)
+        self._initialized = True
         self.__post_init__()
 
     def __post_init__(self):
         # leave a mark saying we've been here
-        self._set_hidden('_post_initialized', True)
+        self._post_initialized = True
 
 
 class A(Root):
@@ -35,6 +35,7 @@ class InitTestCase(unittest.TestCase):
         o = JsonObj(JsonObj(a=1, b={"@x": 17}))
         self.assertEqual("JsonObj(a=1, b=JsonObj(**{'@x': 17}))", str(o))
 
+    @unittest.skip("Underscore testing turns out to be far to invasive -- checks have been removed")
     def test_no_underscores(self):
         """ Make sure that underscore values cannot be constructed or added afterwards """
         with self.assertRaises(ValueError) as e:
