@@ -2,6 +2,7 @@
 [![Latest Version](https://img.shields.io/pypi/pyversions/jsonasobj.svg)](https://pypi.python.org/pypi/jsonasobj)
 [![Pyversions](https://img.shields.io/pypi/v/jsonasobj.svg)](https://pypi.python.org/pypi/jsonasobj) 
 [![License](https://pypip.in/license/jsonasobj/badge.svg)](https://pypi.python.org/pypi/jsonasobj/)
+![](https://github.com/hsolbrig/jsonasobj/workflows/Build/badge.svg)
 
 ## Revision History
 * 1.1.0 -- Method signatures all have full typing, `load` function will take a file name, a url -or- an open file as an argument 
