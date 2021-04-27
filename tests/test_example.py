@@ -3,7 +3,7 @@ import json
 import jsonasobj
 from dict_compare import compare_dicts
 
-from jsonasobj.jsonobj import as_json, as_dict
+from jsonasobj._jsonobj import as_json, as_dict
 
 test_data = {
   "@context": {
@@ -26,6 +26,11 @@ test_data = {
 }
 test_json = str(test_data).replace("'", '"')
 
+test_data_slim = {
+    "knows": [{"name": "Dave Longley"}]
+}
+test_json_slim = str(test_data_slim).replace("'", '"')
+
 
 class ExampleTestCase(unittest.TestCase):
     def test_example(self):
@@ -38,6 +43,12 @@ class ExampleTestCase(unittest.TestCase):
         self.assertEqual(json.loads(pyobj._as_json), json.loads(as_json(pyobj)))
         self.assertTrue(compare_dicts(test_data, pyobj._as_dict))
         self.assertTrue(compare_dicts(test_data, as_dict(pyobj)))
+
+    def test_example_slim(self):
+        """ Test a slimmed down version of example for inner list """
+        pyobj = jsonasobj.loads(test_json_slim)
+        self.assertEqual('Dave Longley', pyobj.knows[0].name)
+
 
 
 if __name__ == '__main__':

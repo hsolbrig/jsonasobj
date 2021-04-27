@@ -33,7 +33,7 @@ class OuterListTestCase(unittest.TestCase):
 
     def test_list_constructor(self):
         t1 = loads(s_list)
-        t1_dict = as_dict(t1)
+        t1_dict = as_json_obj(t1)
         self.assertEqual(p_list, t1_dict)
         t2 = JsonObj(t1_dict)
         self.assertEqual(s_list, as_json(t2))

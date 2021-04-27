@@ -2,7 +2,7 @@ import json
 from typing import Union, List, Dict, Tuple, Optional, Callable, Any, Iterator
 from hbreader import hbread
 
-from .extendednamespace import ExtendedNamespace
+from jsonasobj.extendednamespace import ExtendedNamespace
 
 # Possible types in the JsonObj representation
 JsonObjTypes = Union["JsonObj", List["JsonObjTypes"], str, bool, int, float, None]
@@ -19,10 +19,8 @@ class JsonObj(ExtendedNamespace):
     identifier is represented as a first-class member of the objects.  JSON identifiers that begin with "_" are
     disallowed in this implementation.
     """
-
-    def __init__(self, list_or_dict: Optional[Union[List, Dict]] = None, *,
-                 _if_missing: Callable[["JsonObj", str], Tuple[bool, Any]] = None,
-                 **kwargs) -> None:
+    def __new__(cls, list_or_dict: Optional[Union[List, Dict]] = None, *,
+                _if_missing: Callable[["JsonObj", str], Tuple[bool, Any]] = None, **kwargs):
         """ Construct a JsonObj from set of keyword/value pairs
 
         :param list_or_dict: A list or dictionary that can be used to construct the object
@@ -31,12 +29,38 @@ class JsonObj(ExtendedNamespace):
         processing proceeds.
         :param kwargs: A dictionary as an alternative constructor.
         """
+        # This makes JsonObj idempotent
+        if isinstance(list_or_dict, JsonObj):
+            if not kwargs and (not _if_missing or _if_missing == list_or_dict._if_missing):
+                return list_or_dict
+            else:
+                obj = super(ExtendedNamespace, cls).__new__(cls)
+                obj.__init__(as_json_obj(list_or_dict), _if_missing=_if_missing, **kwargs)
+        else:
+            obj = super(ExtendedNamespace, cls).__new__(cls)
+        return obj
+
+    def __init__(self, list_or_dict: Optional[Union[List, Dict]] = None, *,
+                 _if_missing: Callable[["JsonObj", str], Tuple[bool, Any]] = None, **kwargs):
+        """ Construct a JsonObj from set of keyword/value pairs
+
+        :param list_or_dict: A list or dictionary that can be used to construct the object
+        :param _if_missing: Function to call if attempt is made to access an undefined value.  Function takes JsonObj
+        instance and parameter as input and returns a tuple -- handled (y or n) and result.  If handled is 'n' inline
+        processing proceeds.
+        :param kwargs: A dictionary as an alternative constructor.
+        """
+        if isinstance(list_or_dict, JsonObj):
+            return
+
         if _if_missing and _if_missing != self._if_missing:
             self._if_missing = _if_missing
         if list_or_dict is not None:
-            if len(kwargs):
+            if kwargs:
                 raise TypeError("Constructor can't have both a single item and a dict")
-            if isinstance(list_or_dict, (dict, JsonObj)):
+            if isinstance(list_or_dict, JsonObj):
+                pass
+            elif isinstance(list_or_dict, dict):
                 self._init_from_dict(list_or_dict)
             elif isinstance(list_or_dict, list):
                 ExtendedNamespace.__init__(self,
@@ -53,10 +77,15 @@ class JsonObj(ExtendedNamespace):
 
     def _init_from_dict(self, d: Union[dict, "JsonObj"]) -> None:
         """ Construct a JsonObj from a dictionary or another JsonObj """
-        if not isinstance(d, dict):
-            d = d._as_dict
-        ExtendedNamespace.__init__(self, _if_missing=self._if_missing, **{k: JsonObj(**v) if isinstance(v, dict) else v
-                                                                          for k, v in d.items()})
+        if not isinstance(d, JsonObj):
+            ExtendedNamespace.__init__(self, _if_missing=self._if_missing,
+                                       **{k: JsonObj(v) if isinstance(v, dict) else v for k, v in d.items()})
+
+    def _hide_list(self):
+        return self._root if '_root' in self else self
+
+    def __str__(self) -> str:
+        return str(self._root) if '_root' in self else super().__str__()
 
     # ===================================================
     # JSON Serializer method
@@ -86,13 +115,13 @@ class JsonObj(ExtendedNamespace):
 
     def _keys(self) -> List[str]:
         """ Return all non-hidden keys """
-        for k in self.__dict__.keys():
+        for k in self._hide_list().__dict__.keys():
             if k not in hide:
                 yield k
 
     def _items(self) -> List[Tuple[str, JsonObjTypes]]:
         """ Return all non-hidden items """
-        for k, v in self.__dict__.items():
+        for k, v in self._hide_list().__dict__.items():
             if k not in hide:
                 yield k, v
 
@@ -172,7 +201,8 @@ def loads(s: str, **kwargs) -> JsonObj:
     """
     if isinstance(s, (bytes, bytearray)):
         s = s.decode(json.detect_encoding(s), 'surrogatepass')
-    return json.loads(s, object_hook=lambda pairs: JsonObj(**pairs), **kwargs)
+
+    return JsonObj(json.loads(s, object_hook=lambda pairs: JsonObj(pairs), **kwargs))
 
 
 def load(source, **kwargs) -> JsonObj:
@@ -191,7 +221,8 @@ def as_dict(obj: Union[JsonObj, List]) -> Union[List, Dict[str, JsonTypes]]:
     :param obj: pseudo 'self'
     :return: dictionary that cooresponds to the json object
     """
-    return [e._as_dict if isinstance(e, JsonObj) else e for e in obj] if isinstance(obj, list) else obj._as_dict
+    return [e._as_dict if isinstance(e, JsonObj) else e for e in obj] if isinstance(obj, list) else\
+        obj._as_dict if isinstance(obj, JsonObj) else obj
 
 
 def as_list(obj: Union[JsonObj, List]) -> List[JsonTypes]:
@@ -199,10 +230,10 @@ def as_list(obj: Union[JsonObj, List]) -> List[JsonTypes]:
 
     :param obj: pseudo 'self'
     """
-    return obj._as_list
+    return obj._as_list if isinstance(obj, JsonObj) else obj
 
 
-def as_json(obj: Union[JsonObj, List], indent: Optional[str] = '   ',
+def as_json(obj: Union[Dict, JsonObj, List], indent: Optional[str] = '   ',
             filtr: Callable[[dict], dict] = None, **kwargs) -> str:
     """ Convert obj to json string representation.
 
@@ -216,35 +247,37 @@ def as_json(obj: Union[JsonObj, List], indent: Optional[str] = '   ',
         obj = obj._root
     return obj._as_json_dumps(indent, filtr=filtr, **kwargs) if isinstance(obj, JsonObj) else \
         json.dumps(obj, default=lambda o: JsonObj._default(o, filtr) if filtr else JsonObj._default(o),
-                      indent=indent, **kwargs)
+                   indent=indent, **kwargs)
 
 
-def as_json_obj(obj: Union[JsonObj, List]) -> JsonTypes:
+def as_json_obj(obj: Union[Dict, JsonObj, List]) -> JsonTypes:
     """ Return obj as pure python json (vs. JsonObj)
         :param obj: pseudo 'self'
         :return: Pure python json image
     """
-    return [e._as_json_obj() if isinstance(e, JsonObj) else e for e in obj] \
-        if isinstance(obj, list) else obj._as_json_obj()
+    if isinstance(obj, JsonObj):
+        obj = obj._hide_list()
+    return [as_json_obj(e) if isinstance(e, JsonObj) else e for e in obj] if isinstance(obj, list) else\
+        obj._as_json_obj() if isinstance(obj, JsonObj) else obj
 
 
-def get(obj: JsonObj, item: str, default: JsonObjTypes = None) -> JsonObjTypes:
+def get(obj: Union[Dict, JsonObj], item: str, default: JsonObjTypes = None) -> JsonObjTypes:
     """ Dictionary get routine """
-    return obj._get(item, default)
+    return obj._get(item, default) if isinstance(obj, JsonObj) else obj.get(item, default)
 
 
-def setdefault(obj: JsonObj, k: str, value: Union[Dict, JsonTypes]) -> JsonObjTypes:
-    """ Dictionary setdefault reoutine """
-    return obj._setdefault(k, value)
+def setdefault(obj: Union[Dict, JsonObj], k: str, value: Union[Dict, JsonTypes]) -> JsonObjTypes:
+    """ Dictionary setdefault routine """
+    return obj._setdefault(k, value) if isinstance(obj, JsonObj) else obj.setdefault(k, value)
 
 
-def keys(obj: JsonObj) -> Iterator[str]:
+def keys(obj: Union[Dict, JsonObj]) -> Iterator[str]:
     """ same as dict keys() without polluting the namespace """
-    return obj._keys()
+    return obj._keys() if isinstance(obj, JsonObj) else obj.keys()
 
 
-def items(obj: JsonObj) -> Iterator[Tuple[str, JsonObjTypes]]:
+def items(obj: Union[Dict, JsonObj]) -> Iterator[Tuple[str, JsonObjTypes]]:
     """ Same as dict items() except that the values are JsonObjs instead of vanilla dictionaries
     :return:
     """
-    return obj._items()
+    return obj._items() if isinstance(obj, JsonObj) else obj.items()

@@ -1,6 +1,12 @@
 CHANGES
 =======
 
+* Add a build badge
+* Fix issue #10
+
+v2.0.1
+------
+
 * Ignore Pipfile.lock
 * Fairly extensive refactoring
 

@@ -3,7 +3,7 @@ import json
 from dict_compare import compare_dicts
 
 import jsonasobj
-from jsonasobj.jsonobj import as_json, as_dict
+from jsonasobj._jsonobj import as_json, as_dict
 
 test_json = """{
   "@context": {
