@@ -1,6 +1,7 @@
 CHANGES
 =======
 
+* Another fairly extensive overhaul to address lists as roots, embedded objects and other "edge" cases
 * Add a build badge
 * Fix issue #10
 
