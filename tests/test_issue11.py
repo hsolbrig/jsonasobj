@@ -77,7 +77,7 @@ class NonJSONObjTestCase(unittest.TestCase):
         """ JsonObj should be idempotent """
         o = JsonObj({"a": 42})
         self.assertEqual(id(o), id(JsonObj(o)))
-        self.assertNotEqual(id(o), id(JsonObj(o, _if_missing=1)))
+        self.assertNotEqual(id(o), id(JsonObj(o, _if_missing=lambda x: (True, None))))
 
 
 if __name__ == '__main__':

@@ -19,8 +19,11 @@ class JsonObj(ExtendedNamespace):
     identifier is represented as a first-class member of the objects.  JSON identifiers that begin with "_" are
     disallowed in this implementation.
     """
-    def __new__(cls, list_or_dict: Optional[Union[List, Dict]] = None, *,
-                _if_missing: Callable[["JsonObj", str], Tuple[bool, Any]] = None, **kwargs):
+    # Set this class variable to False if recursive construction is absolutely necessare (see: test_issue13.py for
+    # details
+    _idempotent = True
+
+    def __new__(cls, *args, _if_missing: Callable[["JsonObj", str], Tuple[bool, Any]] = None, **kwargs):
         """ Construct a JsonObj from set of keyword/value pairs
 
         :param list_or_dict: A list or dictionary that can be used to construct the object
@@ -30,18 +33,15 @@ class JsonObj(ExtendedNamespace):
         :param kwargs: A dictionary as an alternative constructor.
         """
         # This makes JsonObj idempotent
-        if isinstance(list_or_dict, JsonObj):
-            if not kwargs and (not _if_missing or _if_missing == list_or_dict._if_missing):
-                return list_or_dict
-            else:
-                obj = super(ExtendedNamespace, cls).__new__(cls)
-                obj.__init__(as_json_obj(list_or_dict), _if_missing=_if_missing, **kwargs)
-        else:
-            obj = super(ExtendedNamespace, cls).__new__(cls)
+        if cls._idempotent and args and isinstance(args[0], JsonObj):
+            # If we're being called with a single argument
+            if not kwargs and not args[1:] and\
+                    (not _if_missing or _if_missing == args[0]._if_missing) and cls == type(args[0]):
+                return args[0]
+        obj = super(ExtendedNamespace, cls).__new__(cls)
         return obj
 
-    def __init__(self, list_or_dict: Optional[Union[List, Dict]] = None, *,
-                 _if_missing: Callable[["JsonObj", str], Tuple[bool, Any]] = None, **kwargs):
+    def __init__(self, *args, _if_missing: Callable[["JsonObj", str], Tuple[bool, Any]] = None, **kwargs):
         """ Construct a JsonObj from set of keyword/value pairs
 
         :param list_or_dict: A list or dictionary that can be used to construct the object
@@ -50,22 +50,23 @@ class JsonObj(ExtendedNamespace):
         processing proceeds.
         :param kwargs: A dictionary as an alternative constructor.
         """
-        if isinstance(list_or_dict, JsonObj):
+        if args and isinstance(args[0], JsonObj) and not kwargs and not args[1:] and type(self)._idempotent and \
+                    (not _if_missing or _if_missing == args[0]._if_missing) and type(self) == type(args[0]):
             return
 
         if _if_missing and _if_missing != self._if_missing:
             self._if_missing = _if_missing
-        if list_or_dict is not None:
+        if args:
             if kwargs:
                 raise TypeError("Constructor can't have both a single item and a dict")
-            if isinstance(list_or_dict, JsonObj):
+            if isinstance(args[0], JsonObj):
                 pass
-            elif isinstance(list_or_dict, dict):
-                self._init_from_dict(list_or_dict)
-            elif isinstance(list_or_dict, list):
+            elif isinstance(args[0], dict):
+                self._init_from_dict(args[0])
+            elif isinstance(args[0], list):
                 ExtendedNamespace.__init__(self,
                                            _root=[JsonObj(e) if isinstance(e, (dict, list)) else
-                                                  e for e in list_or_dict])
+                                                  e for e in args[0]])
             else:
                 raise TypeError("JSON Object can only be a list or dictionary")
         else:
