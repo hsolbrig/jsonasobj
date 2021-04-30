@@ -5,7 +5,7 @@ from typing import Callable
 
 from dict_compare import dict_compare
 
-from jsonasobj import as_json_obj, as_dict, as_list, as_json, get, setdefault, JsonObj, keys, items
+from jsonasobj import as_json_obj, as_dict, as_json, get, setdefault, JsonObj, keys, items, values
 from jsonasobj import loads as jso_loads, load as jso_load
 
 
@@ -53,8 +53,8 @@ class NonJSONObjTestCase(unittest.TestCase):
                 self.assertTrue(dict_compare(json_repr, as_json_obj(jsonasobj_repr)))
                 self.assertTrue(dict_compare(json_repr, as_json_obj(json_repr)))
                 self.assertTrue(dict_compare(as_dict(json_repr), as_dict(jsonasobj_repr)))
-                self.assertTrue(dict_compare(as_dict(as_list([json_repr, json_repr])[1]),
-                                             as_dict(as_list([jsonasobj_repr, jsonasobj_repr])[0])))
+                self.assertTrue(dict_compare(as_dict(as_dict([json_repr, json_repr])[1]),
+                                             as_dict(as_dict([jsonasobj_repr, jsonasobj_repr])[0])))
                 self.assertTrue(dict_compare(json.loads(as_json(json_repr)), json.loads(as_json(jsonasobj_repr))))
 
     def test_dict_idioms(self):
@@ -69,6 +69,11 @@ class NonJSONObjTestCase(unittest.TestCase):
         setdefault(jsonasobj_repr, 'z', {"a": 17})
         self.assertEqual(json_repr['z']['a'], jsonasobj_repr.z.a)
         self.assertEqual(list(keys(json_repr)), list(keys(jsonasobj_repr)))
+        self.assertEqual(list(json_repr.keys()), list(keys(jsonasobj_repr)))
+        self.assertEqual(list(values(json_repr)), [as_dict(v) for v in values(jsonasobj_repr)])
+        self.assertEqual(list(json_repr.values()), [as_dict(v) for v in values(jsonasobj_repr)])
+        self.assertEqual(list(items(json_repr)), [(k, as_dict(v)) for k, v in items(jsonasobj_repr)])
+        self.assertEqual(list(json_repr.items()), [(k, as_dict(v)) for k, v in items(jsonasobj_repr)])
         # TODO: this test should probably be finished -- we still have list of JsonObj issues
         # self.assertEqual(list(items(json_repr)),
         #                  [(k, as_json_obj(v) if isinstance(v, JsonObj) else v) for k, v in items(jsonasobj_repr)])
