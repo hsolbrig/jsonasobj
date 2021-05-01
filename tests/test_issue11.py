@@ -84,6 +84,13 @@ class NonJSONObjTestCase(unittest.TestCase):
         self.assertEqual(id(o), id(JsonObj(o)))
         self.assertNotEqual(id(o), id(JsonObj(o, _if_missing=lambda x: (True, None))))
 
+    def test_bool(self):
+        """ Make sure the boolean operator works """
+        self.assertFalse(JsonObj())
+        self.assertTrue(JsonObj(a=None))
+        self.assertFalse(JsonObj([]))
+        self.assertTrue(JsonObj([1]))
+
 
 if __name__ == '__main__':
     unittest.main()

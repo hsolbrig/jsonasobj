@@ -162,6 +162,12 @@ class JsonObj(ExtendedNamespace):
     def __setattr__(self, key, value):
         super().__setattr__(key, JsonObj(value) if isinstance(value, dict) else value)
 
+    def __bool__(self):
+        if '_root' in self:
+            return bool(self._root)
+        else:
+            return bool(any(self._keys()))
+
     @property
     def _as_json(self) -> str:
         """ Convert a JsonObj into straight json text

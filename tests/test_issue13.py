@@ -28,7 +28,6 @@ class DangerousConstructor(unittest.TestCase):
         o2 = MyObj(o1)
         self.assertNotEqual(id(o1), id(o2))
 
-
     def test_deliberate_recursion(self):
         grandfather = RecursiveObject()
         father = RecursiveObject(grandfather)
